@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "doctran_openai"
-version = "0.0.20"
+version = "0.0.21"
 description = "Document transformation framework for vector based retrieval"
 authors = ["William Yang <yangfei86@gmail.com>"]
 readme = "README.md"
