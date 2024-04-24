@@ -84,12 +84,12 @@ Clone or download [`examples.ipynb`](/examples.ipynb) for interactive demos.
 ```
 
 ## Getting Started
-`pip install doctran`
+`pip install doctran_openai`
 
 ```python
-from doctran import Doctran
+from doctran_openai import DoctranOpenai
 
-doctran = Doctran(openai_api_key=OPENAI_API_KEY)
+doctran = DoctranOpenai(openai_api_key=OPENAI_API_KEY)
 document = doctran.parse(content="your_content_as_string")
 ```
 
@@ -99,7 +99,7 @@ Doctran is designed to make chaining document transformations easy. For example,
 Ordering is important when chaining transformations - transformations that are invoked first will be executed first, and its result will be passed to the next transformation.
 
 ```python
-document = await document.redact(entities=["EMAIL_ADDRESS", "PHONE_NUMBER"]).extract(properties).summarize().execute()
+document = document.redact(entities=["EMAIL_ADDRESS", "PHONE_NUMBER"]).extract(properties).summarize().execute()
 ```
 
 ## Doctransformers
@@ -108,7 +108,7 @@ document = await document.redact(entities=["EMAIL_ADDRESS", "PHONE_NUMBER"]).ext
 Given any valid JSON schema, uses OpenAI function calling to extract structured data from a document.
 
 ```python
-from doctran import ExtractProperty
+from doctran_openai import ExtractProperty
 
 properties = ExtractProperty(
     name="millenial_or_boomer", 
@@ -117,42 +117,42 @@ properties = ExtractProperty(
     enum=["millenial", "boomer"],
     required=True
 )
-document = await document.extract(properties=properties).execute()
+document = document.extract(properties=properties).execute()
 ```
 
 ### Redact
 Uses a spaCy model to remove names, emails, phone numbers and other sensitive information from a document. Runs locally to avoid sending sensitive data to third party APIs.
 
 ```python
-document = await document.redact(entities=["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "US_SSN"]).execute()
+document = document.redact(entities=["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "US_SSN"]).execute()
 ```
 
 ### Summarize
 Summarize the information in a document. `token_limit` may be passed to configure the size of the summary, however it may not be respected by OpenAI.
 
 ```python
-document = await document.summarize().execute()
+document = document.summarize().execute()
 ```
 
 ### Refine
 Remove all information from a document unless it's related to a specific set of topics.
 
 ```python
-document = await document.refine(topics=['marketing', 'meetings']).execute()
+document = document.refine(topics=['marketing', 'meetings']).execute()
 ```
 
 ### Translate
 Translates text into another language
 
 ```python
-document = await document.translate(language="spanish").execute()
+document = document.translate(language="spanish").execute()
 ```
 
 ### Interrogate
 Convert information in a document into question and answer format. End user queries often take the form of a question, so converting information into questions and creating indexes from these questions often yields better results when using a vector database for context retrieval.
 
 ```python
-document = await document.interrogate().execute()
+document = document.interrogate().execute()
 ```
 
 ## Contributing

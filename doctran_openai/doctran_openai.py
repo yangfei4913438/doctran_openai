@@ -7,6 +7,7 @@ from enum import Enum
 from typing import List, Optional, Dict, Any, Literal, Union
 from pydantic import BaseModel
 
+
 class ExtractProperty(BaseModel):
     name: str
     description: str
@@ -14,9 +15,12 @@ class ExtractProperty(BaseModel):
     items: Optional[Union[List, Dict[str, Any]]]
     enum: Optional[List[str]]
     required: bool = True
+
+
 class OpenAIConfig(BaseModel):
     api_key: str
     base_url: Optional[str]
+
 
 class DoctranConfig(BaseModel):
     openai_deployment_id: Optional[str]
@@ -24,11 +28,13 @@ class DoctranConfig(BaseModel):
     openai: Any
     openai_token_limit: int
 
+
 class ContentType(Enum):
     text = "text"
     html = "html"
     pdf = "pdf"
     mbox = "mbox"
+
 
 class Transformation(Enum):
     summarize = "DocumentSummarizer"
@@ -38,6 +44,7 @@ class Transformation(Enum):
     redact = "DocumentRedactor"
     translate = "DocumentTranslator"
     process_template = "DocumentTemplateProcessor"
+
 
 # Not easily retrievalble from the presidio library so it should be kept up to date manually based on
 # https://microsoft.github.io/presidio/supported_entities/
@@ -72,6 +79,7 @@ class RecognizerEntity(Enum):
     AU_TFN = "AU_TFN"
     AU_MEDICARE_NUMBER = "AU_MEDICARE_NUMBER"
 
+
 class Document(BaseModel):
     uri: str
     id: str
@@ -90,13 +98,14 @@ class Document(BaseModel):
         transformation_builder = DocumentTransformationBuilder(self)
         transformation_builder.extract(properties=properties)
         return transformation_builder
-    
+
     def summarize(self, token_limit: int) -> 'DocumentTransformationBuilder':
         transformation_builder = DocumentTransformationBuilder(self)
         transformation_builder.summarize(token_limit=token_limit)
         return transformation_builder
 
-    def redact(self, *, entities: List[Union[RecognizerEntity, str]], spacy_model: str = "en_core_web_md", interactive: bool = True) -> 'DocumentTransformationBuilder':
+    def redact(self, *, entities: List[Union[RecognizerEntity, str]], spacy_model: str = "en_core_web_md",
+               interactive: bool = True) -> 'DocumentTransformationBuilder':
         transformation_builder = DocumentTransformationBuilder(self)
         transformation_builder.redact(entities=entities, spacy_model=spacy_model, interactive=interactive)
         return transformation_builder
@@ -115,27 +124,30 @@ class Document(BaseModel):
         transformation_builder = DocumentTransformationBuilder(self)
         transformation_builder.interrogate()
         return transformation_builder
-    
+
     def process_template(self, *, template_regex: str) -> 'DocumentTransformationBuilder':
         transformation_builder = DocumentTransformationBuilder(self)
         transformation_builder.process_template(template_regex=template_regex)
         return transformation_builder
 
+
 class DocumentTransformationBuilder:
-    '''
+    """
     A builder to enable chaining of document transformations.
-    '''
+    """
+
     def __init__(self, document: Document) -> None:
         self.document = document
         self.transformations = []
-    
+
     def execute(self) -> Document:
-        module_name = "doctran.transformers"
+        module_name = "doctran_openai.transformers"
         module = importlib.import_module(module_name)
         try:
             transformed_document = self.document.copy()
             for transformation in self.transformations:
-                transformer = getattr(module, transformation[0].value)(config=transformed_document.config, **transformation[1])
+                transformer = getattr(module, transformation[0].value)(config=transformed_document.config,
+                                                                       **transformation[1])
                 transformed_document = transformer.transform(transformed_document)
             self.transformations = []
             return transformed_document
@@ -150,8 +162,10 @@ class DocumentTransformationBuilder:
         self.transformations.append((Transformation.summarize, {"token_limit": token_limit}))
         return self
 
-    def redact(self, *, entities: List[Union[RecognizerEntity, str]], spacy_model: str, interactive: bool) -> 'DocumentTransformationBuilder':
-        self.transformations.append((Transformation.redact, {"entities": entities, "spacy_model": spacy_model, "interactive": interactive}))
+    def redact(self, *, entities: List[Union[RecognizerEntity, str]], spacy_model: str,
+               interactive: bool) -> 'DocumentTransformationBuilder':
+        self.transformations.append(
+            (Transformation.redact, {"entities": entities, "spacy_model": spacy_model, "interactive": interactive}))
         return self
 
     def refine(self, *, topics: List[str]) -> 'DocumentTransformationBuilder':
@@ -165,16 +179,18 @@ class DocumentTransformationBuilder:
     def interrogate(self) -> 'DocumentTransformationBuilder':
         self.transformations.append((Transformation.interrogate, {}))
         return self
-    
+
     def process_template(self, *, template_regex: str) -> 'DocumentTransformationBuilder':
         self.transformations.append((Transformation.process_template, {"template_regex": template_regex}))
         return self
 
-class Doctran:
-    def __init__(self, openai_api_key: str = None, openai_model: str = "gpt-4", openai_token_limit: int = 8000, openai_deployment_id: Optional[str] = None):
+
+class DoctranOpenai:
+    def __init__(self, openai_api_key: str = None, openai_model: str = "gpt-4", openai_token_limit: int = 8000,
+                 openai_deployment_id: Optional[str] = None):
         self.config = DoctranConfig(
             openai_model=openai_model,
-            openai=None,
+            openai=OpenAI(**OpenAIConfig(api_key=openai_api_key).dict()),
             openai_token_limit=openai_token_limit
         )
         if openai_api_key:
@@ -186,6 +202,10 @@ class Doctran:
         else:
             raise Exception("No OpenAI API Key provided")
 
+        if os.environ.get('OPENAI_API_BASE'):
+            # self.config.openai.api_base = os.environ['OPENAI_API_BASE']
+            openai_config.base_url = os.environ['OPENAI_API_BASE']
+
         if openai_deployment_id:
             self.config.openai_deployment_id = openai_deployment_id
         elif os.environ.get("OPENAI_DEPLOYMENT_ID"):
@@ -193,23 +213,24 @@ class Doctran:
 
         # if os.environ.get('OPENAI_API_TYPE'):
         #     self.config.openai.api_type = os.environ['OPENAI_API_TYPE']
-        if os.environ.get('OPENAI_API_BASE'):
-            openai_config.base_url = os.environ['OPENAI_API_BASE']
-        #     self.config.openai.api_base = os.environ['OPENAI_API_BASE']
+        #
         # if os.environ.get('OPENAI_API_VERSION'):
         #     self.config.openai.api_version = os.environ['OPENAI_API_VERSION']
+
         self.config.openai = OpenAI(**openai_config.dict())
 
-    def parse(self, *, content: str, content_type: ContentType = "text", uri: str = None, metadata: dict = None) -> Document:
-        '''
+    def parse(self, *, content: str, content_type: ContentType = "text", uri: str = None,
+              metadata: dict = None) -> Document:
+        """
         Parse raw text and apply different chunking schemes based on the content type.
 
         Returns:
             Document: the parsed content represented as a Doctran Document
-        '''
+        """
         if not uri:
             uri = str(uuid.uuid4())
         if content_type == ContentType.text.value:
             # TODO: Optional chunking for documents that are too large
-            document = Document(id=str(uuid.uuid4()), content_type=content_type, raw_content=content, transformed_content=content, config=self.config, uri=uri, metadata=metadata)
+            document = Document(id=str(uuid.uuid4()), content_type=content_type, raw_content=content,
+                                transformed_content=content, config=self.config, uri=uri, metadata=metadata)
             return document
