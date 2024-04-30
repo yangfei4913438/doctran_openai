@@ -87,9 +87,9 @@ Clone or download [`examples.ipynb`](/examples.ipynb) for interactive demos.
 `pip install doctran_openai`
 
 ```python
-from doctran_openai import DoctranOpenai
+from doctran_openai import Doctran
 
-doctran = DoctranOpenai(openai_api_key=OPENAI_API_KEY)
+doctran = Doctran(openai_api_key=OPENAI_API_KEY)
 document = doctran.parse(content="your_content_as_string")
 ```
 
