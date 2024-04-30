@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "doctran_openai"
-version = "0.0.21"
+version = "0.0.27"
 description = "Document transformation framework for vector based retrieval"
 authors = ["William Yang <yangfei86@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10.0"
-pydantic = "^1.10.9"
+pydantic = "^2.7.1"
 lxml = "^4.9.2"
 openai = "^1.23.2"
 presidio-analyzer = "^2.2.33"

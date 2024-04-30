@@ -1,1 +1,1 @@
-from .doctran_openai import DoctranOpenai, Document, DoctranConfig, ContentType, ExtractProperty, RecognizerEntity, Transformation
+from .doctran_openai import Doctran, Document, DoctranConfig, ContentType, ExtractProperty, RecognizerEntity, Transformation

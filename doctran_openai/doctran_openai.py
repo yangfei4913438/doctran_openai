@@ -19,11 +19,10 @@ class ExtractProperty(BaseModel):
 
 class OpenAIConfig(BaseModel):
     api_key: str
-    base_url: Optional[str]
+    base_url: Optional[str] = None
 
 
 class DoctranConfig(BaseModel):
-    openai_deployment_id: Optional[str]
     openai_model: str
     openai: Any
     openai_token_limit: int
@@ -185,39 +184,30 @@ class DocumentTransformationBuilder:
         return self
 
 
-class DoctranOpenai:
-    def __init__(self, openai_api_key: str = None, openai_model: str = "gpt-4", openai_token_limit: int = 8000,
-                 openai_deployment_id: Optional[str] = None):
+class Doctran:
+    def __init__(self, openai_model: str = "gpt-3.5-turbo", openai_token_limit: int = 8000,
+                 openai_api_key: Optional[str] = None, openai_api_base: Optional[str] = None):
+
+        if openai_api_key is None and os.environ.get("OPENAI_API_KEY") is None:
+            raise Exception("No OpenAI API Key provided")
+        elif openai_api_key is None:
+            openai_api_key = os.environ.get("OPENAI_API_KEY")
+
+        if openai_api_base is None:
+            openai_api_base = os.environ.get("OPENAI_API_BASE")
+
+        if openai_api_base:
+            self.openai_config = OpenAIConfig(api_key=openai_api_key, base_url=openai_api_base).dict()
+        else:
+            self.openai_config = OpenAIConfig(api_key=openai_api_key).dict()
+
         self.config = DoctranConfig(
             openai_model=openai_model,
-            openai=OpenAI(**OpenAIConfig(api_key=openai_api_key).dict()),
+            openai=OpenAI(**self.openai_config),
             openai_token_limit=openai_token_limit
         )
-        if openai_api_key:
-            # self.config.openai.api_key = openai_api_key
-            openai_config = OpenAIConfig(api_key=openai_api_key)
-        elif os.environ.get("OPENAI_API_KEY"):
-            # self.config.openai.api_key = os.environ["OPENAI_API_KEY"]
-            openai_config = OpenAIConfig(api_key=os.environ["OPENAI_API_KEY"])
-        else:
-            raise Exception("No OpenAI API Key provided")
 
-        if os.environ.get('OPENAI_API_BASE'):
-            # self.config.openai.api_base = os.environ['OPENAI_API_BASE']
-            openai_config.base_url = os.environ['OPENAI_API_BASE']
-
-        if openai_deployment_id:
-            self.config.openai_deployment_id = openai_deployment_id
-        elif os.environ.get("OPENAI_DEPLOYMENT_ID"):
-            self.config.openai_deployment_id = os.environ["OPENAI_DEPLOYMENT_ID"]
-
-        # if os.environ.get('OPENAI_API_TYPE'):
-        #     self.config.openai.api_type = os.environ['OPENAI_API_TYPE']
-        #
-        # if os.environ.get('OPENAI_API_VERSION'):
-        #     self.config.openai.api_version = os.environ['OPENAI_API_VERSION']
-
-        self.config.openai = OpenAI(**openai_config.dict())
+        self.config.openai = OpenAI(**self.openai_config)
 
     def parse(self, *, content: str, content_type: ContentType = "text", uri: str = None,
               metadata: dict = None) -> Document:

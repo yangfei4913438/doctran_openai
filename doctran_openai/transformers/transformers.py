@@ -14,7 +14,6 @@ class TooManyTokensException(Exception):
 
 
 class OpenAIChatCompletionCall(BaseModel):
-    seed: Optional[str] = None
     model: str = "gpt-3.5-turbo-0613"
     messages: List[Dict[str, str]]
     temperature: int = 0
@@ -62,7 +61,6 @@ class OpenAIDocumentTransformer(DocumentTransformer):
     def executeOpenAICall(self, document: Document) -> Document:
         try:
             function_call = OpenAIFunctionCall(
-                seed=self.config.openai_deployment_id,
                 model=self.config.openai_model,
                 messages=[{"role": "user", "content": document.transformed_content}],
                 tools=[{
